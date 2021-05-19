@@ -21,68 +21,56 @@
 #L:  OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 #L:  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #L:
-#h: Usage: $0 [-v] [-l] [-t TOOLCHAIN] [-gms] [-b FUNC] PROGRAM [ARGS...]
+#h: Usage: $0 [OPTIONS...] PROGRAM [ARGS...]
 #h:
 #h: This program helps executing programs installed in another prefixes.
+#h:
+#h: -g        : Run with GDB.
+#H: -m        : Run with Valgrind.
+#h: -s        : Run with strace.
+#h: -v        : Show variables.
+#h: -b FUNC   : Put a breakpoint in function.
+#h: -p PREFIX : Run on prefix.
+#h: 
 hrun() {
     ## Parse command line arguments.
-    local OPTIND optopt= ops= toolchain=
-    while getopts "vlt:gmsb:" optopt;do # OPTARG
+    local OPTIND optopt= ops=
+    while getopts "vlp:gmsb:" optopt;do # OPTARG
         local ops="${ops}${optopt}"
         case $optopt in
-            g)  export HRUN_ENABLE_GDB=y        ;;
-            m)  export HRUN_ENABLE_VALGRIND=y   ;;
-            s)  export HRUN_ENABLE_STRACE=y     ;;
-            b)  export HRUN_GDB_COMMANDS="break ${OPTARG}";;
-            t)  local toolchain="${OPTARG}"     ;;
+            g)  export HRUN_ENABLE_GDB=y                   ;;
+            m)  export HRUN_ENABLE_VALGRIND=y              ;;
+            s)  export HRUN_ENABLE_STRACE=y                ;;
+            b)  export HRUN_GDB_COMMANDS="break ${OPTARG}" ;;
+            p)  export HRUN_PREFIX="${OPTARG}"             ;;
             \?) return 1;;
         esac
     done
     shift $(( $OPTIND - 1 ))
-    ## Calculate variables.
-    hrun_calc_variables "${toolchain}"
-    ## Show operations.
     case "${ops}" in *v*) hrun_show_variables;; esac
-    ## Execute.
     if test -n "$1";then
-        export LD_LIBRARY_PATH="${HPKG_SYSROOT}/lib64:${HPKG_SYSROOT}/lib${LD_LIBRARY_PATH:+:}${LD_LIBRARY_PATH}"
-        export PATH="${HPKG_SYSROOT}/bin:${HPKG_SYSROOT}/sbin${PATH:+:}${PATH}"
+        export LD_LIBRARY_PATH="${HRUN_PREFIX}/lib64:${HRUN_PREFIX}/lib${LD_LIBRARY_PATH:+:}${LD_LIBRARY_PATH}"
+        export PATH="${HRUN_PREFIX}/bin:${HRUN_PREFIX}/sbin${PATH:+:}${PATH}"
         hrun_exec "$@"
     fi
 }
 ## ---------------------------------------------------------------------------
 hrun_show_variables() {
     printf '\n## OPTIONS\n\n' 
-    printf '%-20s: %s\n' HPKG_DIRECTORY       "${HPKG_DIRECTORY}"
     printf '%-20s: %s\n' HRUN_ENABLE_GDB      "${HRUN_ENABLE_GDB}"
     printf '%-20s: %s\n' HRUN_ENABLE_VALGRIND "${HRUN_ENABLE_VALGRIND}"
     printf '%-20s: %s\n' HRUN_GDB             "${HRUN_GDB}"
-    printf '\n## CALCULATED\n\n'
-    printf '%-20s: %s\n' HPKG_TARGET_BUILD "${HPKG_TARGET_BUILD}"
-    printf '\n## READ FROM TOOLCHAIN\n\n'
-    printf '%-20s: %s\n' HPKG_SYSROOT      "${HPKG_SYSROOT}"
-    printf '%-20s: %s\n' HPKG_CONFIG       "${HPKG_CONFIG}"
+    printf '%-20s: %s\n' HRUN_PREFIX          "${HRUN_PREFIX}"
     printf '\n'
 }
 hrun_calc_variables() {
-
-    ## Get options.
-    HPKG_DIRECTORY="${HPKG_DIRECTORY:-${HOME}/.hpkg}"
     HRUN_ENABLE_GDB="${HRUN_ENABLE_GDB:-n}"
+    HRUN_ENABLE_VALGRIND="${HRUN_ENABLE_VALGRIND:-n}"
     HRUN_GDB="/usr/bin/gdb"
-
-    ## Calculate variables.
-    HPKG_TARGET_BUILD="${1:-`uname -m`-linux-gnu}"
-
-    ## Source target.
-    HPKG_SYSROOT=/usr/local
-    if test -f "${HPKG_DIRECTORY}/${HPKG_TARGET_BUILD}.sh";then
-        HPKG_CONFIG="${HPKG_DIRECTORY}/${HPKG_TARGET_BUILD}.sh"
-        . "${HPKG_CONFIG}"
-    else
-        HPKG_CONFIG=
-    fi
+    HRUN_PREFIX="${HRUN_PREFIX:-/usr/local}"
 }
+
+
 ## ---------------------------------------------------------------------------
 hrun_exec() {
     local executable="`which "${1}"`"
@@ -111,12 +99,13 @@ hrun_exec() {
 
 
 ## ---------------------------------------------------------------------------
+hrun_calc_variables
 if test @"`basename "$0"`" = @"hrun";then
     if test -n "$1";then
         hrun "$@"
     else
         sed -n 's/^ *#h: \{0,1\}//p' "$0" | sed "s|\\\$0|`basename $0`|g"
         echo ""
-        sed -n 's/^ *#l: \{0,1\}//p' "$0"
+        sed -n 's/^ *#l: \{0,2\}//p' "$0"
     fi
 fi
