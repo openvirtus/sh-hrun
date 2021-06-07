@@ -1,5 +1,8 @@
 #!/bin/sh -e
 #L:
+#L:  This software is free to use and modify, but not free to maintain.
+#L:
+#l:  Donate bitcoin: 1C1ZzDje7vHhF23mxqfcACE8QD4nqxywiV
 #l:  Copyright (c) 2018 Openvirtus.com, http://openvirtus.com
 #L:
 #L:  Permission is hereby granted, free of charge, to any person obtaining
@@ -21,17 +24,21 @@
 #L:  OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 #L:  WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #L:
+#r: ## HRUN
+#r:
 #h: Usage: $0 [OPTIONS...] PROGRAM [ARGS...]
 #h:
-#h: This program helps executing programs installed in another prefixes.
+#h: This program helps executing programs for debugging. You can specify
+#h: a different prefix, run it with GDB/VALGRIND/STRACE and add a breakpoint
+#h: in a function.
 #h:
 #h: -g        : Run with GDB.
-#H: -m        : Run with Valgrind.
+#h: -m        : Run with Valgrind.
 #h: -s        : Run with strace.
 #h: -v        : Show variables.
 #h: -b FUNC   : Put a breakpoint in function.
 #h: -p PREFIX : Run on prefix.
-#h: 
+#r:
 hrun() {
     ## Parse command line arguments.
     local OPTIND optopt= ops=
