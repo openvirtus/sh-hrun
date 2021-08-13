@@ -33,7 +33,7 @@
 #h: in a function.
 #h:
 #h: -g        : Run with GDB.
-#h: -m        : Run with Valgrind.
+#h: -m        : Run with Valgrind (./valgrind.log)
 #h: -s        : Run with strace.
 #h: -v        : Show variables.
 #h: -b FUNC   : Put a breakpoint in function.
@@ -66,15 +66,19 @@ hrun_show_variables() {
     printf '\n## OPTIONS\n\n' 
     printf '%-20s: %s\n' HRUN_ENABLE_GDB      "${HRUN_ENABLE_GDB}"
     printf '%-20s: %s\n' HRUN_ENABLE_VALGRIND "${HRUN_ENABLE_VALGRIND}"
-    printf '%-20s: %s\n' HRUN_GDB             "${HRUN_GDB}"
     printf '%-20s: %s\n' HRUN_PREFIX          "${HRUN_PREFIX}"
+    printf '%-20s: %s\n' GDB                  "${GDB}"
+    printf '%-20s: %s\n' VALGRIND             "${VALGRIND}"
+    printf '%-20s: %s\n' STRACE               "${STRACE}"
     printf '\n'
 }
 hrun_calc_variables() {
     HRUN_ENABLE_GDB="${HRUN_ENABLE_GDB:-n}"
     HRUN_ENABLE_VALGRIND="${HRUN_ENABLE_VALGRIND:-n}"
-    HRUN_GDB="/usr/bin/gdb"
     HRUN_PREFIX="${HRUN_PREFIX:-/usr/local}"
+    GDB="/usr/bin/gdb"
+    VALGRIND="valgrind"
+    STRACE="strace"
 }
 
 
@@ -83,18 +87,20 @@ hrun_exec() {
     local executable="`which "${1}"`"
     shift
     if test @"${HRUN_ENABLE_STRACE}" = @"y";then
-        strace "${executable}" "$@"
+        "${STRACE}" "${executable}" "$@"
     elif test @"${HRUN_ENABLE_GDB}" = @"y";then
-        LANG="en_EN.utf8" "${HRUN_GDB}"                                      \
-            -q  \
-            -ex "start" -ex "${HRUN_GDB_COMMANDS}" -ex "continue" -ex "backtrace" \
-             --args \
+        LANG="en_EN.utf8" "${GDB}" -q  \
+            -ex "start"                \
+            -ex "${HRUN_GDB_COMMANDS}" \
+            -ex "continue"             \
+            -ex "backtrace"            \
+             --args                    \
             "${executable}" "$@"
         # Emacs: -i=mi -ex "start" -ex "record btrace pt" --args "${executable}" "$@"
     elif test @"${HRUN_ENABLE_VALGRIND}" = @"y";then
-        LANG="en_EN.utf8" valgrind    \
-            --leak-check=full         \
-            --log-file="valgrind.log" \
+        LANG="en_EN.utf8" "${VALGRIND}" \
+            --leak-check=full           \
+            --log-file="valgrind.log"   \
             "${executable}" "$@"
     else
         "${executable}" "$@"
